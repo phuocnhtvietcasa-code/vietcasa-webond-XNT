@@ -545,6 +545,23 @@ table.xnt tfoot td{font-size:13px}
 .gh-status-banner.unconfigured{background:var(--accent2);color:#1e1b4b;border:1px solid #c7d2fe}
 @media (max-width:1150px){.sync-txt{display:none}.sync-bar{padding:4px}}
 
+/* Revenue trend: scoped presentation only */
+#rTrend{--trend-gross:var(--accent);--trend-net:var(--in);--trend-kpi:var(--danger)}
+.rv-trend-head{display:flex;gap:24px;flex-wrap:wrap;padding:2px 0 16px;border-bottom:1px solid var(--line)}
+.rv-trend-head small{display:block;color:var(--muted);font-size:11px;margin-bottom:4px}
+.rv-trend-head b{font-size:17px;font-variant-numeric:tabular-nums}.rv-trend-head .peak{margin-left:auto;text-align:right}
+.rv-trend-scroll{overflow-x:auto;margin-top:12px}.rv-trend-svg{min-width:0}
+.rv-trend-svg .grid{stroke:var(--line);stroke-dasharray:3 5}.rv-trend-svg .ax{fill:var(--muted)}
+.rv-trend-svg .trend-value{font-size:10px;font-weight:700;fill:var(--text)}
+.rv-trend-svg .trend-hit{fill:transparent;cursor:pointer;animation:none;outline:none}
+.rv-trend-svg .trend-band{fill:var(--accent2);opacity:0;pointer-events:none;transition:opacity .18s}
+.rv-trend-svg .trend-bucket:hover .trend-band,.rv-trend-svg .trend-bucket:focus-within .trend-band,.rv-trend-svg .trend-bucket.selected .trend-band{opacity:1}
+.rv-trend-svg .trend-hit:focus{stroke:var(--accent);stroke-width:1;stroke-dasharray:3 3}
+.rv-trend-detail{display:grid;grid-template-columns:1.15fr repeat(4,1fr);gap:12px;padding:16px 0 3px;border-top:1px solid var(--line);margin-top:8px;min-height:80px}
+.rv-trend-detail small{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}.rv-trend-detail b{display:block;font-size:13px;white-space:normal;font-variant-numeric:tabular-nums}.rv-trend-detail .period b{font-size:15px}.rv-trend-detail em{display:block;font-style:normal;color:var(--muted);font-size:10px;margin-top:4px}
+.rv-trend-detail .gross b{color:var(--trend-gross)}.rv-trend-detail .net b{color:var(--trend-net)}.rv-trend-detail .target b{color:var(--trend-kpi)}
+@media(max-width:760px){.rv-trend-svg{min-width:660px}.rv-trend-head{gap:16px}.rv-trend-head .peak{margin-left:0;text-align:left}.rv-trend-detail{grid-template-columns:repeat(2,minmax(0,1fr))}.rv-trend-detail .period{grid-column:1/-1}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script><style>.aistudio-hover-highlight { box-shadow: inset 0 0 0 0.5px white, inset 0 0 0 1.5px rgba(128,128,128,0.6) !important; }.aistudio-active-highlight { outline: 2px solid #87a9ff !important; outline-offset: -2px !important; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3) !important; }.aistudio-generating-blur { filter: blur(5px) grayscale(100%) brightness(28%) !important; transition: filter 0.3s ease; }#aistudio-focus-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: #87a9ff; border-radius: 12px; z-index: 10000; padding: 8px; color: #32302c; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }#aistudio-hover-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: rgba(128,128,128,0.6); border-radius: 12px; z-index: 10000; padding: 8px; color: white; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }.aistudio-img-icon { display: none; vertical-align: middle; pointer-events: auto; cursor: pointer; }.aistudio-img-icon.visible { display: inline-flex; }#aistudio-focus-mode-tag .aistudio-img-icon { position: relative; width: 26px; height: 26px; background: #32302c; border-radius: 6px; margin: -4px -4px -4px 0; }#aistudio-focus-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-hover-mode-tag .aistudio-img-icon { position: relative; width: 18px; height: 18px; margin-left: 4px; }#aistudio-hover-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-focus-mode-tag .aistudio-img-icon:hover, #aistudio-hover-mode-tag .aistudio-img-icon:hover { background: #424242 !important; }#aistudio-focus-mode-tag .aistudio-img-icon:active, #aistudio-hover-mode-tag .aistudio-img-icon:active { background: #393f51 !important; }</style></head>
 <body>
@@ -2055,16 +2072,31 @@ function revBuckets(r){
   for(let d=new Date(f.getFullYear(),f.getMonth(),1);d<=t;d=new Date(d.getFullYear(),d.getMonth()+1,1)){const e=new Date(d.getFullYear(),d.getMonth()+1,0);out.push({l:'T'+(d.getMonth()+1)+(RPERIOD==='all'?'/'+String(d.getFullYear()).slice(2):''),f:ymd(d),t:ymd(e)})}
   return out}
 function trendChart(labels,gross,net,kpi){
-  const W=760,H=290,pl=58,pr=10,pt=14,pb=34,ih=H-pt-pb,n=labels.length||1;
-  const max=niceMax(Math.max(1,...gross,...kpi));const cw=(W-pl-pr)/n,bw=Math.max(2,Math.min(14,(cw-6)/2));
-  let g='';for(let i=0;i<=4;i++){const y=pt+ih*(1-i/4);g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" class="grid"/><text x="${pl-8}" y="${y+4}" text-anchor="end" class="ax">${short(max*i/4)}</text>`}
-  const step=Math.ceil(n/16);let pts=[];
-  labels.forEach((l,i)=>{const cx=pl+cw*i+cw/2;
-    [[gross[i],'#4f46e5','Doanh thu'],[net[i],'#16a36a','Doanh thu thuần']].forEach(([v,c,nm],j)=>{const h=Math.max(v>0?2:0,ih*v/max);g+=`<rect class="bar" style="animation-delay:${i*20+j*15}ms" x="${cx-bw-1+j*(bw+2)}" y="${pt+ih-h}" width="${bw}" height="${h}" rx="3" fill="${c}" data-tip="${esc(nm+' '+l+': '+money(v))}"/>`});
-    if(i%step===0)g+=`<text x="${cx}" y="${H-pb+20}" text-anchor="middle" class="ax">${l}</text>`;
-    pts.push([cx,pt+ih-ih*kpi[i]/max,kpi[i],l])});
-  if(kpi.some(v=>v>0)){g+=`<polyline fill="none" stroke="#e0384a" stroke-width="2.5" stroke-dasharray="6 4" points="${pts.map(p=>p[0]+','+p[1]).join(' ')}"/>`;pts.forEach(p=>g+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#e0384a" data-tip="${esc('KPI '+p[3]+': '+money(p[2]))}"/>`)}
-  return `<svg viewBox="0 0 ${W} ${H}" class="chart">${g}</svg>`}
+  const W=Math.max(900,labels.length*40+100),H=340,pl=68,pr=20,pt=38,pb=40,ih=H-pt-pb,n=labels.length;
+  const max=niceMax(Math.max(1,...gross,...net,...kpi)),min=Math.min(0,...gross,...net),span=max-min;
+  const cw=(W-pl-pr)/n,bw=Math.max(3,Math.min(18,(cw-12)/2)),Y=v=>pt+ih*(max-v)/span,zero=Y(0);
+  const peak=gross.indexOf(Math.max(...gross)),sum=a=>a.reduce((s,v)=>s+v,0);
+  let g=`<defs><linearGradient id="rtGross" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--trend-gross)"/><stop offset="1" stop-color="var(--trend-gross)" stop-opacity=".6"/></linearGradient><linearGradient id="rtNet" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--trend-net)"/><stop offset="1" stop-color="var(--trend-net)" stop-opacity=".6"/></linearGradient></defs>`;
+  for(let i=0;i<=4;i++){const v=min+span*i/4,y=Y(v);g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" class="grid"/><text x="${pl-10}" y="${y+4}" text-anchor="end" class="ax">${short(v)}</text>`}
+  g+=`<text x="${pl}" y="15" class="ax">VNĐ</text>`;
+  if(min<0)g+=`<line x1="${pl}" x2="${W-pr}" y1="${zero}" y2="${zero}" stroke="var(--muted)"/>`;
+  labels.forEach((l,i)=>{const cx=pl+cw*(i+.5);g+=`<g class="trend-bucket ${i===peak?'selected':''}" data-index="${i}"><rect class="trend-band" x="${pl+cw*i+2}" y="${pt-18}" width="${cw-4}" height="${ih+18}" rx="6"/>`;
+    [[gross[i],'rtGross'],[net[i],'rtNet']].forEach(([v,c],j)=>{const h=Math.abs(Y(v)-zero);g+=`<rect class="bar" style="animation-delay:${Math.min(i*25+j*20,450)}ms" x="${cx-bw-2+j*(bw+4)}" y="${Math.min(Y(v),zero)}" width="${bw}" height="${h}" rx="4" fill="url(#${c})"/>`});
+    if(gross[i]&&n<=24)g+=`<text x="${cx}" y="${Math.min(Y(gross[i]),Y(net[i]))-9}" text-anchor="middle" class="trend-value">${short(gross[i])}</text>`;
+    g+=`<text x="${cx}" y="${H-14}" text-anchor="middle" class="ax">${esc(l)}</text></g>`});
+  if(kpi.some(v=>v>0)){g+=`<polyline fill="none" stroke="var(--trend-kpi)" stroke-width="2.5" stroke-dasharray="6 5" stroke-linejoin="round" points="${kpi.map((v,i)=>(pl+cw*(i+.5))+','+Y(v)).join(' ')}"/>`;
+    kpi.forEach((v,i)=>{if(v>0)g+=`<circle cx="${pl+cw*(i+.5)}" cy="${Y(v)}" r="4" fill="var(--card)" stroke="var(--trend-kpi)" stroke-width="2.5"/>`})}
+  labels.forEach((l,i)=>{g+=`<rect class="trend-hit" data-index="${i}" tabindex="0" role="button" aria-label="${esc(l+': doanh thu '+money(gross[i])+', doanh thu thuần '+money(net[i])+', KPI '+money(kpi[i]))}" x="${pl+cw*i}" y="${pt-20}" width="${cw}" height="${ih+pb+20}"/>`});
+  return `<div class="rv-trend-head"><div><small>Tổng doanh thu</small><b>${money(sum(gross))}</b></div><div><small>Doanh thu thuần</small><b>${money(sum(net))}</b></div><div class="peak"><small>Kỳ doanh thu cao nhất · ${esc(labels[peak])}</small><b>${money(gross[peak])}</b></div></div><div class="rv-trend-scroll"><svg viewBox="0 0 ${W} ${H}" class="chart rv-trend-svg" role="group" aria-label="Xu hướng doanh thu, doanh thu thuần và KPI">${g}</svg></div><div class="rv-trend-detail" id="rTrendDetail" aria-live="polite"></div>`}
+function bindRevenueTrend(labels,gross,net,kpi,buckets){
+  const root=$('#rTrend'),detail=$('#rTrendDetail');if(!detail||!labels.length)return;
+  const show=i=>{const v=gross[i],target=kpi[i],prev=i?gross[i-1]:0,change=i&&prev?((v-prev)/Math.abs(prev)*100):null;
+    const pct=x=>x.toLocaleString('vi-VN',{maximumFractionDigits:1})+'%';
+    root.querySelectorAll('.trend-bucket').forEach(el=>el.classList.toggle('selected',+el.dataset.index===i));
+    detail.innerHTML=`<div class="period"><small>Kỳ đang xem</small><b>${esc(labels[i])}</b><em>${vnDate(buckets[i].f)} – ${vnDate(buckets[i].t)}</em></div><div class="gross"><small>Doanh thu</small><b>${money(v)}</b><em>${change===null?'':(change>=0?'▲ +':'▼ ')+pct(change)+' so với kỳ trước'}</em></div><div class="net"><small>Doanh thu thuần</small><b>${money(net[i])}</b><em>CK & vận chuyển: ${money(v-net[i])}</em></div><div class="target"><small>Mục tiêu KPI</small><b>${target?money(target):'Chưa nhập KPI'}</b><em>${target?(v>=target?'Vượt: ':'Còn thiếu: ')+money(Math.abs(v-target)):''}</em></div><div><small>Hoàn thành KPI</small><b>${target?pct(v/target*100):'—'}</b><em>${target?(v>=target?'Đã đạt mục tiêu':'Chưa đạt mục tiêu'):''}</em></div>`};
+  root.querySelectorAll('.trend-hit').forEach(el=>{const select=()=>show(+el.dataset.index);el.onpointerenter=select;el.onclick=select;el.onfocus=select;el.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();const next=Math.max(0,Math.min(labels.length-1,+el.dataset.index+(e.key==='ArrowRight'?1:-1)));root.querySelector(`.trend-hit[data-index="${next}"]`)?.focus()}else if(e.key==='Enter'||e.key===' '){e.preventDefault();select()}}});
+  show(gross.indexOf(Math.max(...gross)));
+}
 function hbars(items,col){if(!items.length)return '<div class="empty">Chưa có dữ liệu trong kỳ</div>';const mx=items[0][1]||1;
   return items.map(([l,v])=>`<div class="rv-hb" data-tip="${esc(l+': '+money(v))}"><span>${esc(l)}</span><div class="rv-bar"><i style="width:${v/mx*100}%;background:${col}"></i></div><b>${short(v)}</b></div>`).join('')}
 function renderRevenue(){
@@ -2101,6 +2133,7 @@ function renderRevenue(){
     <button class="btn" style="width:100%;justify-content:center;margin-top:12px" onclick="openKpiModal()">Nhập / sửa KPI theo tháng</button>`;
   // xu hướng
   $('#rTrend').innerHTML=bk.length?trendChart(bk.map(b=>b.l),gs,ns,ks):'<div class="empty">Chưa có phiếu xuất</div>';
+  if(bk.length)bindRevenueTrend(bk.map(b=>b.l),gs,ns,ks,bk);
   // chi phí
   const rows=[['CK bán hàng',c.ckBh,'#f0663a'],['CK Sale',c.ckSale,'#e6a100'],['CK Admin',c.ckAdmin,'#8b5cf6'],['Phí vận chuyển',c.ship,'#0ea5b7']],tc=rows.reduce((a,x)=>a+x[1],0);
   const pg=v=>c.gross?pc(v/c.gross*100):'0%';

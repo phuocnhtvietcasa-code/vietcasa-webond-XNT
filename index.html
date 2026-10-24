@@ -3,7 +3,13 @@
   
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1e1b4b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kho Vietcasa">
+<meta name="format-detection" content="telephone=no">
 <title>Quản Lý Kho Xuất Nhập Tồn - Vietcasa</title>
 <meta name="description" content="Hệ thống quản lý kho xuất nhập tồn Webond Vietcasa tích hợp tự động lưu mã hóa và đồng bộ dữ liệu thời gian thực qua GitHub Cloud &amp; Server khi mở trên máy khác hoặc nhấn F5.">
 <meta property="og:title" content="Quản Lý Kho Xuất Nhập Tồn - Vietcasa">
@@ -562,6 +568,50 @@ table.xnt tfoot td{font-size:13px}
 .rv-trend-detail .gross b{color:var(--trend-gross)}.rv-trend-detail .net b{color:var(--trend-net)}.rv-trend-detail .target b{color:var(--trend-kpi)}
 @media(max-width:760px){.rv-trend-svg{min-width:660px}.rv-trend-head{gap:16px}.rv-trend-head .peak{margin-left:0;text-align:left}.rv-trend-detail{grid-template-columns:repeat(2,minmax(0,1fr))}.rv-trend-detail .period{grid-column:1/-1}}
 
+
+/* ===== MOBILE (iPhone / Android / Safari / Chrome) ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent;overflow-x:hidden}
+@supports (height:100dvh){.app{min-height:100dvh}.sb{height:100dvh}}
+@media (max-width:980px){
+  .sb{width:min(280px,84vw);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 0 40px rgba(0,0,0,.3);z-index:60}
+  .mask.show{z-index:55}
+  .top{position:sticky;top:0;z-index:30;flex-wrap:wrap;gap:8px;padding-top:calc(12px + env(safe-area-inset-top));padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right))}
+  .content{padding-left:calc(16px + env(safe-area-inset-left));padding-right:calc(16px + env(safe-area-inset-right));padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .card,.content>*{min-width:0;max-width:100%}
+  table{min-width:max-content}
+  .card:has(table),.tbl,.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .toolbar>*{max-width:100%}
+  .ov{padding:8px;padding-top:calc(8px + env(safe-area-inset-top));padding-bottom:calc(8px + env(safe-area-inset-bottom));align-items:flex-end}
+  .modal{max-height:calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));border-radius:18px 18px 12px 12px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .modal-f{flex-wrap:wrap;gap:8px}
+  .grid-a,.grid-b,.hgrid,.rgrid,.txl,.rv-2{grid-template-columns:minmax(0,1fr)!important}
+  svg{max-width:100%}
+}
+@media (max-width:760px){
+  input,select,textarea,.inp{font-size:16px!important}
+  .btn,button{min-height:40px}
+  .pgbar button{min-width:40px;height:40px}
+  .pgbar select{height:40px}
+  .flow{grid-template-columns:1fr!important}
+  .top h1,.top h2{font-size:17px}
+}
+@media (max-width:560px){
+  body{font-size:13.5px}
+  .content{padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
+  .top{padding-left:calc(12px + env(safe-area-inset-left));padding-right:calc(12px + env(safe-area-inset-right))}
+  .card{border-radius:12px}
+  .modal-f .btn{flex:1 1 auto}
+  .pgbar{justify-content:center}
+}
+@media (max-width:980px){
+  .top .right{width:100%;margin-left:0;display:flex;flex-wrap:wrap;gap:8px;min-width:0}
+  .sync-bar{min-width:0!important;max-width:100%;flex-wrap:wrap}
+  .sync-bar button{max-width:100%;white-space:normal}
+  .main,.content{max-width:100vw;overflow-x:clip}
+}
+@media (hover:none){.btn:hover,button:hover{transform:none}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script><style>.aistudio-hover-highlight { box-shadow: inset 0 0 0 0.5px white, inset 0 0 0 1.5px rgba(128,128,128,0.6) !important; }.aistudio-active-highlight { outline: 2px solid #87a9ff !important; outline-offset: -2px !important; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3) !important; }.aistudio-generating-blur { filter: blur(5px) grayscale(100%) brightness(28%) !important; transition: filter 0.3s ease; }#aistudio-focus-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: #87a9ff; border-radius: 12px; z-index: 10000; padding: 8px; color: #32302c; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }#aistudio-hover-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: rgba(128,128,128,0.6); border-radius: 12px; z-index: 10000; padding: 8px; color: white; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }.aistudio-img-icon { display: none; vertical-align: middle; pointer-events: auto; cursor: pointer; }.aistudio-img-icon.visible { display: inline-flex; }#aistudio-focus-mode-tag .aistudio-img-icon { position: relative; width: 26px; height: 26px; background: #32302c; border-radius: 6px; margin: -4px -4px -4px 0; }#aistudio-focus-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-hover-mode-tag .aistudio-img-icon { position: relative; width: 18px; height: 18px; margin-left: 4px; }#aistudio-hover-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-focus-mode-tag .aistudio-img-icon:hover, #aistudio-hover-mode-tag .aistudio-img-icon:hover { background: #424242 !important; }#aistudio-focus-mode-tag .aistudio-img-icon:active, #aistudio-hover-mode-tag .aistudio-img-icon:active { background: #393f51 !important; }</style></head>
 <body>

@@ -621,6 +621,18 @@ const TEMPLATE=document.documentElement.outerHTML;
 /* =========================================================
    TIỆN ÍCH
    ========================================================= */
+<script>
+/* Chụp lại mã gốc của trang TRƯỚC khi vẽ giao diện, để khi Lưu chỉ thay phần dữ liệu */
+const TEMPLATE=document.documentElement.outerHTML;
+
+// === ĐƯỜNG LINK GOOGLE SHEETS CỦA BẠN ĐƯỢC CHÈN VÀO ĐÂY ===
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhpeIutBgzUHOoQI094HWEwJnecJ5JwDP2aHN6if4QVReGCDl_6Kh-Sp2Cap_wEquKug/exec";
+
+
+/* =======================================================
+   TIỆN ÍCH
+   ======================================================= */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>new Intl.NumberFormat('vi-VN').format(Math.round(n||0));
@@ -759,32 +771,63 @@ const Store = (() => {
 
   function lsSave(data) {
     try {
-      localStorage.setItem(ENC_KEY, encrypt(data));
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function lsLoad() {
-    try {
-      const raw = localStorage.getItem(ENC_KEY);
-      if (raw) {
-        const d = decrypt(raw);
-        if (d && valid(d)) return d;
-      }
-      const legRaw = localStorage.getItem(LEGACY_LS_KEY) || localStorage.getItem('kho_xnt_phongexcel_v2');
-      if (legRaw) {
-        const d = JSON.parse(legRaw);
-        if (d && valid(d)) {
-          lsSave(d);
-          idbSave(d);
-          return d;
+        const encryptedData = encrypt(data);
+        localStorage.setItem(ENC_KEY, encryptedData);
+        
+        // --- TỰ ĐỘNG ĐỒNG BỘ LÊN GOOGLE SHEETS ---
+        if (typeof GOOGLE_SCRIPT_URL !== 'undefined' && GOOGLE_SCRIPT_URL) {
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ data: encryptedData })
+            }).catch(err => console.error("Lỗi đồng bộ đám mây:", err));
         }
-      }
+        // ----------------------------------------
+        
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function lsLoad() {
+    // 1. Cố gắng tải dữ liệu mới nhất từ đám mây Google Sheets trước
+    try {
+        if (typeof GOOGLE_SCRIPT_URL !== 'undefined' && GOOGLE_SCRIPT_URL) {
+            const response = await fetch(GOOGLE_SCRIPT_URL);
+            const result = await response.json();
+            if (result && result.data) {
+                const d = decrypt(result.data);
+                if (d && valid(d)) {
+                    console.log("Đã cập nhật dữ liệu mới nhất từ Cloud!");
+                    return d;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Không thể kết nối Cloud, chuyển sang đọc bộ nhớ máy...", e);
+    }
+
+    // 2. Dự phòng: Nếu Cloud lỗi hoặc trống, đọc localStorage trên máy
+    try {
+        const raw = localStorage.getItem(ENC_KEY);
+        if (raw) {
+            const d = decrypt(raw);
+            if (d && valid(d)) return d;
+        }
+        const legRaw = localStorage.getItem(LEGACY_LS_KEY) || localStorage.getItem('kho_xnt_phongexcel_v2');
+        if (legRaw) {
+            const d = JSON.parse(legRaw);
+            if (d && valid(d)) {
+                lsSave(d);
+                idbSave(d);
+                return d;
+            }
+        }
     } catch (e) {}
     return null;
-  }
+}
 
   return { encrypt, decrypt, idbSave, idbLoad, lsSave, lsLoad };
 })();

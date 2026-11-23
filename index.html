@@ -528,11 +528,17 @@ table.xnt tfoot td{font-size:13px}
 .sync-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
 .sync-dot.ok{background:var(--in);box-shadow:0 0 0 3px var(--inbg)}
 .sync-dot.syncing{background:var(--warn);animation:pulse 1s infinite}
+.sync-dot.retry{background:var(--warn);animation:pulse 1.6s infinite}
 .sync-dot.err{background:var(--danger);box-shadow:0 0 0 3px var(--dangerbg)}
 .sync-dot.idle{background:#94a3b8}
 .sync-txt{line-height:1.2;white-space:nowrap}
 .sync-txt b{display:block;font-size:12px;color:var(--text)}
 .sync-txt small{font-size:11px;color:var(--muted)}
+.sync-txt.status-ok b{color:var(--in)}
+.sync-txt.status-retry b{color:#a56800}
+.sync-txt.status-err b{color:var(--danger)}
+.offline-alert{position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;z-index:1000;display:flex;justify-content:center;padding:13px 18px;background:#b42318;color:#fff;text-align:center;font-size:15px;font-weight:800;line-height:1.35;box-shadow:0 3px 14px rgba(0,0,0,.24)}
+.offline-alert[hidden]{display:none}
 .btn.gh{background:#24292f;border-color:#24292f;color:#fff}
 .btn.gh:hover{background:#3b434b}
 .btn.sync-now{padding:7px 10px}
@@ -616,6 +622,7 @@ body{-webkit-tap-highlight-color:transparent;overflow-x:hidden}
 <script src="https://cdn.jsdelivr.net/npm/html2canvas-pro@2.0.4"></script><style>.aistudio-hover-highlight { box-shadow: inset 0 0 0 0.5px white, inset 0 0 0 1.5px rgba(128,128,128,0.6) !important; }.aistudio-active-highlight { outline: 2px solid #87a9ff !important; outline-offset: -2px !important; box-shadow: 0 0 0 0.5px rgba(0,0,0,0.3), inset 0 0 0 0.5px rgba(0,0,0,0.3) !important; }.aistudio-generating-blur { filter: blur(5px) grayscale(100%) brightness(28%) !important; transition: filter 0.3s ease; }#aistudio-focus-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: #87a9ff; border-radius: 12px; z-index: 10000; padding: 8px; color: #32302c; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }#aistudio-hover-mode-tag { position: absolute; display: none; align-items: center; gap: 4px; background: rgba(128,128,128,0.6); border-radius: 12px; z-index: 10000; padding: 8px; color: white; font-family: Inter, sans-serif; font-size: 14px; font-style: normal; font-weight: 500; line-height: 21px; pointer-events: none; }.aistudio-img-icon { display: none; vertical-align: middle; pointer-events: auto; cursor: pointer; }.aistudio-img-icon.visible { display: inline-flex; }#aistudio-focus-mode-tag .aistudio-img-icon { position: relative; width: 26px; height: 26px; background: #32302c; border-radius: 6px; margin: -4px -4px -4px 0; }#aistudio-focus-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 4px; left: 4px; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-hover-mode-tag .aistudio-img-icon { position: relative; width: 18px; height: 18px; margin-left: 4px; }#aistudio-hover-mode-tag .aistudio-img-icon::before { content: ""; position: absolute; top: 0; left: 0; width: 18px; height: 18px; background-color: white; -webkit-mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; mask-image: url("https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/edit_fix_auto/default/24px.svg"); mask-size: contain; mask-repeat: no-repeat; }#aistudio-focus-mode-tag .aistudio-img-icon:hover, #aistudio-hover-mode-tag .aistudio-img-icon:hover { background: #424242 !important; }#aistudio-focus-mode-tag .aistudio-img-icon:active, #aistudio-hover-mode-tag .aistudio-img-icon:active { background: #393f51 !important; }</style></head>
 <body>
 
+<div class="offline-alert" id="offlineAlert" role="alert" hidden></div>
 <div class="app">
   <!-- ========== BẢNG ĐIỀU KHIỂN BÊN TRÁI ========== -->
   <aside class="sb" id="sb">
@@ -988,13 +995,30 @@ const Store = (() => {
   return { encrypt, decrypt, idbSave, idbLoad, lsSave, lsLoad };
 })();
 
+const UNSYNCED_KEY='hasUnsyncedChanges';
+function readUnsyncedChanges(){
+  try{return localStorage.getItem(UNSYNCED_KEY)==='true'||localStorage.getItem('webond_vietcasa_pending_sync_v3')==='1'}catch(e){return false}
+}
+let hasUnsyncedChanges=readUnsyncedChanges();
+if(hasUnsyncedChanges){try{localStorage.setItem(UNSYNCED_KEY,'true')}catch(e){}}
+function isUnsynced(){
+  try{hasUnsyncedChanges=localStorage.getItem(UNSYNCED_KEY)==='true'}catch(e){}
+  return hasUnsyncedChanges;
+}
+function setUnsynced(value){
+  hasUnsyncedChanges=Boolean(value);
+  try{localStorage.setItem(UNSYNCED_KEY,hasUnsyncedChanges?'true':'false')}catch(e){}
+}
 let DIRTY=false, FROM_DRAFT=false;
 let S=load();
 
 function load(){
   const lsData = Store.lsLoad();
   let candidate = null;
-  if(valid(EMB)){
+  if(hasUnsyncedChanges&&valid(lsData)){
+    FROM_DRAFT=true;
+    candidate=lsData;
+  } else if(valid(EMB)){
     if(valid(lsData) && (lsData.updated||0) > (EMB.updated||0)){
       FROM_DRAFT=true;
       candidate = lsData;
@@ -1011,10 +1035,10 @@ function load(){
 }
 
 // Bất đồng bộ: Sau khi tải trang, tự động đồng bộ IndexedDB nếu có bản mới hơn
-(async function syncIndexedDB(){
+const localStateReady=(async function syncIndexedDB(){
   try {
     const idbData = await Store.idbLoad();
-    if(valid(idbData) && (idbData.updated||0) > (S.updated||0)){
+    if(valid(idbData) && (hasUnsyncedChanges ? (!FROM_DRAFT || (idbData.updated||0) > (S.updated||0)) : (idbData.updated||0) > (S.updated||0))){
       S = idbData;
       FROM_DRAFT=true;
       rerender();
@@ -1074,6 +1098,37 @@ const CloudSync = (() => {
   let syncState = 'idle'; // 'idle' | 'syncing' | 'ok' | 'err'
   let syncMsg = 'Tự động lưu & đồng bộ';
   let serverAvailable = false;
+  let githubConfirmed = false;
+  let githubApiFailure = false;
+  const WRITE_BUTTONS='button[onclick^="saveTxn("],button[onclick="saveProduct()"],button[onclick="impApply()"],button[onclick^="deleteDoc("],button[onclick^="delTxn("],button[onclick^="delProduct("],button[onclick="saveCompany()"],button[onclick="saveKpi()"],button[onclick="clearAll()"],button[onclick="resetSample()"]';
+
+  function syncWriteControls(){
+    const locked=navigator.onLine===false||githubApiFailure;
+    document.querySelectorAll(WRITE_BUTTONS).forEach(button=>{
+      if(locked){
+        if(button.dataset.syncLock!=='1'){
+          button.dataset.syncWasDisabled=button.disabled?'1':'0';
+          button.dataset.syncLock='1';
+        }
+        button.disabled=true;
+      }else if(button.dataset.syncLock==='1'){
+        if(button.id==='impOk'&&typeof IMP!=='undefined'){
+          const items=IMP.items||[];
+          button.disabled=!(items.filter(o=>o.st==='new').length+(IMP.mode==='update'?items.filter(o=>o.st==='old').length:0));
+        }else button.disabled=button.dataset.syncWasDisabled==='1';
+        delete button.dataset.syncWasDisabled;
+        delete button.dataset.syncLock;
+      }
+    });
+  }
+
+  function isWriteLocked(){return navigator.onLine===false||githubApiFailure}
+  function networkChanged(){
+    if(navigator.onLine===false){syncState='err';syncMsg='Mất kết nối mạng'}
+    else if(isUnsynced()){syncState='retry';syncMsg='Đang thử lại...'}
+    else{syncState='idle';syncMsg='Đang kiểm tra GitHub...'}
+    updateUI();
+  }
 
   function defaultConfig() {
     const autoRepo = parseGhRepoInput('');
@@ -1122,6 +1177,8 @@ const CloudSync = (() => {
     } else if (S.ghSync) {
       S.ghSync = { ...cfg, tokenEnc: '' };
     }
+    githubConfirmed = false;
+    githubApiFailure = false;
     persist(S);
     updateUI();
   }
@@ -1150,19 +1207,30 @@ const CloudSync = (() => {
     const dot = $('#syncDot'), txt = $('#syncTxt'), ghBtn = $('#ghSyncBtn'), nowBtn = $('#syncNowBtn');
     const cfg = getConfig();
     const ghReady = canWriteGitHub(cfg);
-    const ghReadOnly = !ghReady && isGitHubConfigured(cfg);
+    const offline = navigator.onLine === false;
+    const dirty = isUnsynced();
+    const badgeState = offline || githubApiFailure ? 'err' : githubConfirmed && !dirty ? 'ok' : 'retry';
 
     if (nowBtn) nowBtn.classList.toggle('spin', syncState === 'syncing');
-    if (dot) {
-      dot.className = 'sync-dot ' + (syncState === 'syncing' ? 'syncing' : syncState === 'err' ? 'err' : (ghReady || serverAvailable || syncState === 'ok') ? 'ok' : 'idle');
-    }
+    if (dot) dot.className = 'sync-dot ' + badgeState;
     if (txt) {
-      const label = syncState === 'syncing' ? 'Đang đồng bộ...' : ghReady ? ('GitHub: ' + (cfg.mode === 'gist' ? 'Gist' : cfg.owner + '/' + cfg.repo)) : serverAvailable ? 'Đồng bộ Đám mây: BẬT' : ghReadOnly ? ('GitHub (Đọc): ' + cfg.owner + '/' + cfg.repo) : 'Lưu nội bộ (Chưa gắn GitHub)';
-      const sub = lastSyncTime ? ('Cập nhật ' + hm(lastSyncTime)) : (S.updated ? ('Lúc ' + hm(S.updated)) : 'Nhấn F5 tự cập nhật');
-      txt.innerHTML = '<b>' + esc(label) + '</b><small>' + esc(syncState === 'err' ? syncMsg : sub) + '</small>';
+      const label = offline ? 'Mất Wi-Fi' : githubApiFailure ? 'Lỗi đồng bộ' : badgeState === 'ok' ? 'Đã đồng bộ' : (syncState === 'syncing' || syncState === 'retry') ? 'Đang thử lại...' : 'Chưa đồng bộ';
+      const sub = offline ? 'Đang chờ kết nối mạng' : githubApiFailure ? syncMsg : dirty ? 'Dữ liệu đang chờ đẩy lên GitHub' : lastSyncTime ? ('Cập nhật ' + hm(lastSyncTime)) : ghReady ? 'Đang chờ xác nhận từ GitHub' : 'Chưa có kết quả đồng bộ GitHub';
+      txt.className = 'sync-txt status-' + badgeState;
+      txt.innerHTML = '<b>' + esc(label) + '</b><small>' + esc(sub) + '</small>';
     }
+    const alert = $('#offlineAlert');
+    if (alert) {
+      const locked = offline || githubApiFailure;
+      alert.hidden = !locked;
+      alert.textContent = offline
+        ? 'Mất kết nối Wi-Fi — Tạm khóa lưu dữ liệu cho đến khi có mạng lại'
+        : 'Lỗi đồng bộ GitHub — Tạm khóa lưu dữ liệu cho đến khi đồng bộ lại';
+    }
+    syncWriteControls();
     if (ghBtn) {
-      ghBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>' + (ghReady ? 'GitHub: Đã kết nối' : 'Cài đặt GitHub');
+      const ghLabel = offline ? 'Mất Wi-Fi' : githubApiFailure ? 'Lỗi đồng bộ' : githubConfirmed && !dirty ? 'Đã đồng bộ' : ghReady ? 'Chưa đồng bộ' : 'Cài đặt GitHub';
+      ghBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>' + ghLabel;
     }
   }
 
@@ -1223,44 +1291,49 @@ const CloudSync = (() => {
       const meta = await res.json();
       if (meta && meta.sha) return meta.sha;
     }
-    // Fallback cho file > 1MB bằng Git Trees API
-    const treeUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/git/trees/' + encodeURIComponent(cfg.branch || 'main') + '?t=' + Date.now();
+    // Fallback cho file lớn hoặc bị giới hạn endpoint Contents bằng Git Trees API.
+    const treeUrl = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/git/trees/' + encodeURIComponent(cfg.branch || 'main') + '?recursive=1&t=' + Date.now();
     const tRes = await fetch(treeUrl, { headers, cache: 'no-store' });
     if (tRes.ok) {
       const treeData = await tRes.json();
       const found = (treeData.tree || []).find(item => item.path === filePath);
       if (found) return found.sha;
     }
-    return null;
+    throw new Error('Không lấy được SHA mới nhất của ' + filePath + ' (HTTP ' + (tRes.status || res.status) + ')');
   }
 
   async function putRepoFile(cfg, filePath, contentStr, commitMsg) {
     const token = getToken(cfg);
     if (!token) throw new Error('Chưa nhập GitHub Token');
-    const sha = await getRepoFileSha(cfg, filePath, token);
     const pathEnc = filePath.split('/').map(encodeURIComponent).join('/');
     const url = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + pathEnc;
-    const body = {
-      message: commitMsg,
-      content: utf8ToBase64(contentStr),
-      branch: cfg.branch || 'main'
-    };
-    if (sha) body.sha = sha;
-    const res = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(body)
-    });
-    if (!res.ok) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      // Re-read SHA without cache before every PUT. A 409 gets one fresh-SHA retry.
+      const sha = await getRepoFileSha(cfg, filePath, token);
+      const body = {
+        message: commitMsg,
+        content: utf8ToBase64(contentStr),
+        branch: cfg.branch || 'main'
+      };
+      if (sha) body.sha = sha;
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+      if (res.status === 200 || res.status === 201) {
+        try { return await res.json(); } catch (e) { return { status: res.status }; }
+      }
       let errText = 'HTTP ' + res.status;
       try { const j = await res.json(); if (j && j.message) errText = j.message; } catch (e) {}
+      if (res.status === 409 && attempt === 0) continue;
       throw new Error(errText);
     }
-    return await res.json();
+    throw new Error('GitHub upload conflict: ' + filePath);
   }
 
   async function pushToGitHub(dataToPush, forceHtml = false) {
@@ -1290,7 +1363,7 @@ const CloudSync = (() => {
           }
         })
       });
-      if (!res.ok) throw new Error('Gist HTTP ' + res.status);
+      if (res.status !== 200 && res.status !== 201) throw new Error('Gist HTTP ' + res.status);
       return true;
     } else {
       const msg = 'Cập nhật dữ liệu kho (' + hm(payload.updated || Date.now()) + ')';
@@ -1319,7 +1392,7 @@ const CloudSync = (() => {
     return null;
   }
 
-  async function pushToServer(dataToPush, force = false) {
+  async function pushToServer(dataToPush, force = false, ignoreOutdated = false) {
     if (!ONLINE) return false;
     try {
       const res = await fetch('/api/warehouse' + (force ? '?force=1' : ''), {
@@ -1330,7 +1403,7 @@ const CloudSync = (() => {
       if (res.ok) {
         serverAvailable = true;
         const j = await res.json();
-        if (j.status === 'outdated' && valid(j.data)) {
+        if (j.status === 'outdated' && valid(j.data) && !ignoreOutdated) {
           applyRemoteState(j.data, 'Máy chủ');
         }
         return true;
@@ -1340,6 +1413,11 @@ const CloudSync = (() => {
   }
 
   function applyRemoteState(remoteData, sourceLabel) {
+    if (isUnsynced()) {
+      updateUI('retry', 'Dữ liệu trên máy đang chờ đẩy lên GitHub');
+      return false;
+    }
+    if (sourceLabel !== 'GitHub') githubConfirmed = false;
     const localCfg = getConfig();
     S = { ...remoteData };
     if (localCfg && (localCfg.tokenEnc || localCfg.owner || localCfg.gistId)) {
@@ -1353,25 +1431,39 @@ const CloudSync = (() => {
     rerender();
     refreshChrome();
     refreshSave();
-    updateUI('ok', 'Đã đồng bộ ' + sourceLabel);
+    updateUI('idle', 'Đã tải dữ liệu từ ' + sourceLabel);
+    return true;
   }
 
   // Kéo dữ liệu mới nhất khi mở trang / F5 / bấm nút Làm mới
   async function pullLatest(opts = {}) {
     if (isSyncing) return;
+    await localStateReady;
+    if (isSyncing) return;
+    if (isUnsynced()) {
+      updateUI('retry', 'Dữ liệu trên máy đang chờ đẩy lên GitHub');
+      return pushLatest({ manual: false, force: true });
+    }
     const cfg = getConfig();
     const hasGh = isGitHubConfigured(cfg);
     isSyncing = true;
     updateUI('syncing', 'Đang kiểm tra dữ liệu mới...');
 
     try {
+      const ghPromise = hasGh
+        ? (cfg.mode === 'gist' ? fetchFromGitHubGist(cfg) : fetchFromGitHubRepo(cfg)).catch(err => {
+            githubApiFailure = true;
+            githubConfirmed = false;
+            console.warn('GitHub pull warning:', err);
+            return null;
+          })
+        : Promise.resolve(null);
       const [srvData, ghData] = await Promise.all([
         pullFromServer(),
-        hasGh ? (cfg.mode === 'gist' ? fetchFromGitHubGist(cfg) : fetchFromGitHubRepo(cfg)).catch(err => {
-          console.warn('GitHub pull warning:', err);
-          return null;
-        }) : Promise.resolve(null)
+        ghPromise
       ]);
+      if (valid(ghData)) githubApiFailure = false;
+      else if (hasGh && !githubApiFailure) githubConfirmed = false;
 
       const candidates = [];
       if (valid(ghData)) candidates.push({ src: 'GitHub', data: ghData });
@@ -1379,7 +1471,7 @@ const CloudSync = (() => {
 
       if (!candidates.length) {
         isSyncing = false;
-        updateUI(serverAvailable || canWriteGitHub(cfg) ? 'ok' : 'idle');
+        updateUI(githubApiFailure ? 'err' : 'idle', githubApiFailure ? 'Lỗi khi đọc dữ liệu GitHub' : 'Chưa có dữ liệu GitHub để xác nhận đồng bộ');
         if (opts.manual && hasGh && !canWriteGitHub(cfg)) {
           toast('Chưa có file dữ liệu trên GitHub hoặc cần cấu hình GitHub Token', 'err');
         } else if (opts.manual) {
@@ -1394,24 +1486,39 @@ const CloudSync = (() => {
       const localUpdated = S.updated || 0;
 
       if (opts.forcePull || remoteUpdated > localUpdated) {
-        applyRemoteState(best.data, best.src);
+        if (!applyRemoteState(best.data, best.src)) return;
+        if (best.src === 'GitHub') {
+          githubConfirmed = true;
+          githubApiFailure = false;
+        } else {
+          githubConfirmed = valid(ghData) && (ghData.updated || 0) >= (S.updated || 0);
+        }
         if (opts.manual || remoteUpdated > localUpdated) {
           toast('☁️ Đã cập nhật dữ liệu mới nhất từ ' + best.src + ' (' + best.data.products.length + ' SP, ' + best.data.txns.length + ' dòng giao dịch)');
         }
         // Đồng bộ chéo để cả Server và GitHub cùng có bản mới nhất
-        if (best.src === 'GitHub' && serverAvailable) pushToServer(S, true);
-        if (best.src === 'Đám mây' && canWriteGitHub(cfg)) pushToGitHub(S).catch(() => {});
+        if (best.src === 'GitHub' && serverAvailable) pushToServer(S, true, true);
+        if (best.src === 'Đám mây' && canWriteGitHub(cfg)) {
+          githubConfirmed = false;
+          isSyncing = false;
+          await pushLatest({ manual: false, forceGithub: true });
+          return;
+        }
+        updateUI(githubApiFailure ? 'err' : 'idle');
       } else if (localUpdated > remoteUpdated) {
         // Máy hiện tại có bản mới hơn -> đẩy lên luôn
         isSyncing = false;
-        await pushLatest({ manual: opts.manual });
+        await pushLatest({ manual: opts.manual, forceGithub: hasGh });
         return;
       } else {
         lastSyncTime = localUpdated || Date.now();
-        updateUI('ok', 'Đã đồng bộ mới nhất');
+        githubConfirmed = valid(ghData) && (ghData.updated || 0) >= localUpdated;
+        updateUI(githubApiFailure ? 'err' : 'idle', githubConfirmed ? 'Đã xác nhận dữ liệu mới nhất từ GitHub' : 'Chưa có dữ liệu GitHub để xác nhận đồng bộ');
         if (opts.manual) toast('✅ Dữ liệu kho đã là bản mới nhất (' + hm(lastSyncTime) + ')');
       }
     } catch (err) {
+      githubApiFailure = hasGh;
+      githubConfirmed = false;
       updateUI('err', err.message || 'Lỗi kết nối');
       if (opts.manual) toast('Không thể tải từ GitHub: ' + (err.message || err), 'err');
     } finally {
@@ -1421,32 +1528,58 @@ const CloudSync = (() => {
 
   // Đẩy dữ liệu mới nhất lên GitHub & Server
   async function pushLatest(opts = {}) {
+    if (isSyncing) return false;
+    await localStateReady;
+    if (isSyncing) return false;
     const cfg = getConfig();
     if (cfg.embedConfig) {
       S.ghSync = { ...cfg };
     }
     persist(S);
-    updateUI('syncing', 'Đang lưu lên đám mây...');
+    const dirtyAtStart = isUnsynced();
+    const shouldPushGitHub = canWriteGitHub(cfg) && (dirtyAtStart || cfg.autoSync || opts.manual || opts.forceHtml || opts.forceGithub);
+    if (navigator.onLine === false) {
+      updateUI('err', 'Mất kết nối mạng');
+      return false;
+    }
+    if (dirtyAtStart && !canWriteGitHub(cfg)) {
+      syncState = 'retry';
+      updateUI('retry', 'Chưa có GitHub Token; dữ liệu cục bộ đang chờ đồng bộ');
+      return false;
+    }
+    updateUI('syncing', dirtyAtStart ? 'Đang thử lại...' : 'Đang lưu lên GitHub...');
     isSyncing = true;
+    let snapshotText = '';
+    let snapshot;
+    let pushedGh = false;
     try {
-      const tasks = [pushToServer(S, Boolean(opts.force))];
-      let pushedGh = false;
-      if (canWriteGitHub(cfg) && (cfg.autoSync || opts.manual || opts.forceHtml)) {
-        tasks.push(pushToGitHub(S, Boolean(opts.forceHtml)).then(() => { pushedGh = true; }));
+      snapshotText = JSON.stringify(S);
+      snapshot = JSON.parse(snapshotText);
+      if (shouldPushGitHub) {
+        await pushToGitHub(snapshot, Boolean(opts.forceHtml));
+        pushedGh = true;
+        githubApiFailure = false;
+        githubConfirmed = true;
+        if (dirtyAtStart && JSON.stringify(S) === snapshotText) {
+          localStorage.removeItem(PENDING_KEY);
+          setUnsynced(false);
+        }
       }
-      await Promise.all(tasks);
-      localStorage.removeItem(PENDING_KEY);
-      lastSyncTime = S.updated || Date.now();
-      updateUI('ok', pushedGh ? 'Đã lưu lên GitHub' : 'Đã lưu tự động');
+      if (!isUnsynced()) await pushToServer(S, Boolean(opts.force || dirtyAtStart), pushedGh);
+      if (pushedGh && !isUnsynced()) lastSyncTime = S.updated || Date.now();
+      updateUI(githubApiFailure ? 'err' : pushedGh ? 'ok' : 'idle', pushedGh ? 'Đã đồng bộ' : 'Chưa có kết quả ghi lên GitHub');
       if (opts.manual) {
-        toast(pushedGh
+        toast(pushedGh && !isUnsynced()
           ? ('☁️ Đã lưu thành công dữ liệu kho lên GitHub' + (opts.forceHtml ? ' (kèm file ' + (cfg.htmlPath || 'index.html') + ')' : '') + '!')
-          : '✅ Đã lưu dữ liệu kho thành công!');
+          : 'Dữ liệu vẫn đang chờ đồng bộ GitHub', pushedGh && !isUnsynced() ? undefined : 'err');
       }
-      return true;
+      return pushedGh && !isUnsynced();
     } catch (err) {
-      localStorage.setItem(PENDING_KEY, '1');
-      updateUI('err', 'Chờ đồng bộ lại');
+      setUnsynced(true);
+      try { localStorage.setItem(PENDING_KEY, '1'); } catch (e) {}
+      githubApiFailure = true;
+      githubConfirmed = false;
+      updateUI('err', err.message || 'Lỗi đồng bộ GitHub');
       if (opts.manual) toast('Lỗi khi đẩy lên GitHub: ' + (err.message || err), 'err');
       return false;
     } finally {
@@ -1457,34 +1590,44 @@ const CloudSync = (() => {
   function schedulePush(force = false) {
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
-      pushLatest({ force });
+      pushLatest({ force, forceGithub: isUnsynced() });
     }, 450);
   }
 
   async function createNewGist(token) {
-    const res = await fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        description: 'Dữ liệu Quản Lý Kho Xuất Nhập Tồn Vietcasa',
-        public: false,
-        files: {
-          'kho-data.json': { content: JSON.stringify(S) }
-        }
-      })
-    });
-    if (!res.ok) {
-      let msg = 'HTTP ' + res.status;
-      try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) {}
-      throw new Error(msg);
+    try {
+      const res = await fetch('https://api.github.com/gists', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/vnd.github+json',
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          description: 'Dữ liệu Quản Lý Kho Xuất Nhập Tồn Vietcasa',
+          public: false,
+          files: {
+            'kho-data.json': { content: JSON.stringify(S) }
+          }
+        })
+      });
+      if (res.status !== 200 && res.status !== 201) {
+        let msg = 'HTTP ' + res.status;
+        try { const j = await res.json(); if (j && j.message) msg = j.message; } catch (e) {}
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      return data.id;
+    } catch (err) {
+      githubApiFailure = true;
+      githubConfirmed = false;
+      updateUI('err', err.message || 'Lỗi đồng bộ GitHub');
+      throw err;
     }
-    const data = await res.json();
-    return data.id;
   }
+
+  const writeObserver = new MutationObserver(syncWriteControls);
+  writeObserver.observe(document.body, { childList: true, subtree: true });
 
   return {
     getConfig,
@@ -1493,12 +1636,22 @@ const CloudSync = (() => {
     isGitHubConfigured,
     canWriteGitHub,
     updateUI,
+    isWriteLocked,
+    networkChanged,
     pullLatest,
     pushLatest,
     schedulePush,
     createNewGist
   };
 })();
+
+function blockWriteIfLocked(){
+  if(!CloudSync.isWriteLocked())return false;
+  toast(navigator.onLine===false
+    ? 'Mất kết nối Wi-Fi — Tạm khóa lưu dữ liệu cho đến khi có mạng lại'
+    : 'Lỗi đồng bộ GitHub — Tạm khóa lưu dữ liệu cho đến khi đồng bộ lại','err');
+  return true;
+}
 
 function openGitHubModal() {
   const cfg = CloudSync.getConfig();
@@ -1682,6 +1835,7 @@ async function saveAndTestGhSync(forceHtml = false) {
 
 
 function save(opts = {}){
+  setUnsynced(true);
   S.updated = Date.now();
   const cfg = CloudSync.getConfig();
   if (cfg.embedConfig) {
@@ -2213,7 +2367,7 @@ function openKpiModal(y){if(y)KPI_YEAR=+y;S.kpi=S.kpi||{};
   <p style="color:var(--muted);font-size:12.5px;margin-top:12px">KPI Quý = tổng 3 tháng · KPI Năm = tổng 12 tháng · KPI Tuần = KPI tháng chia theo số ngày.</p></div>
   <div class="modal-f"><button class="btn" onclick="closeModal()">Hủy</button><button class="btn pri" onclick="saveKpi()">Lưu KPI</button></div>`);
   $$('[data-kpi]').forEach(e=>e.oninput=()=>{$('#kpiSum').textContent='Tổng năm: '+money($$('[data-kpi]').reduce((a,x)=>a+(+x.value||0),0))})}
-function saveKpi(){S.kpi=S.kpi||{};$$('[data-kpi]').forEach(e=>{const v=Math.max(0,+e.value||0);if(v)S.kpi[e.dataset.kpi]=v;else delete S.kpi[e.dataset.kpi]});
+function saveKpi(){if(blockWriteIfLocked())return;S.kpi=S.kpi||{};$$('[data-kpi]').forEach(e=>{const v=Math.max(0,+e.value||0);if(v)S.kpi[e.dataset.kpi]=v;else delete S.kpi[e.dataset.kpi]});
   save();closeModal();toast('Đã lưu KPI doanh thu');if(CUR==='revenue')renderRevenue()}
 
 /* =========================================================
@@ -2279,13 +2433,14 @@ function readImg(file){
     setImg(cv.toDataURL('image/jpeg',.82))};im.src=fr.result};fr.readAsDataURL(file)}
 function setImg(d){TMPIMG=d;const up=$('#upBox');if(!up)return;const old=up.querySelector('img');if(old)old.remove();if(d){const i=new Image();i.src=d;up.prepend(i)}}
 function saveProduct(){
+  if(blockWriteIfLocked())return;
   const v=id=>$(id).value.trim();
   const d={code:v('#fCode').toUpperCase(),name:v('#fName'),unit:v('#fUnit'),cat:v('#fCat')||'Khác',min:+v('#fMin')||0,cost:+v('#fCost')||0,price:+v('#fPrice')||0,openQty:+v('#fOpen')||0,note:v('#fNote'),img:TMPIMG};
   if(!d.code||!d.name||!d.unit)return toast('Thầy điền đủ Mã, Tên và Đơn vị tính nhé','err');
   if(S.products.some(p=>p.code===d.code&&(!EDIT||p.id!==EDIT.id)))return toast('Mã '+d.code+' đã tồn tại','err');
   if(EDIT)Object.assign(EDIT,d);else S.products.push({id:'p'+uid(),...d});
   save();closeModal();toast(EDIT?'Đã cập nhật sản phẩm':'Đã thêm sản phẩm mới');rerender()}
-function delProduct(id){const p=prod(id);const n=S.txns.filter(t=>t.pid===id).length;
+function delProduct(id){if(blockWriteIfLocked())return;const p=prod(id);const n=S.txns.filter(t=>t.pid===id).length;
   if(!confirm(`Xóa sản phẩm "${p.name}"?`+(n?`\n\nSản phẩm này có ${n} phiếu nhập/xuất, các phiếu đó cũng sẽ bị xóa.`:'')))return;
   S.products=S.products.filter(x=>x.id!==id);S.txns=S.txns.filter(t=>t.pid!==id);save();closeModal();toast('Đã xóa sản phẩm');rerender()}
 
@@ -2525,6 +2680,7 @@ function drawImp(){
     ${pgSlice('imp',it,10).map(o=>`<tr><td class="c">${o.row}</td><td><b>${esc(o.code)}</b></td><td>${esc(o.name)}</td><td>${esc(o.cat)}</td><td class="c">${esc(o.unit)}</td><td class="n">${o.has.cost?fmt(o.cost):''}</td><td class="n">${o.has.price?fmt(o.price):''}</td><td class="n">${o.has.min?fmt(o.min):''}</td><td class="n">${o.has.openQty?fmt(o.openQty):''}</td><td>${tag(o)}</td></tr>`).join('')}
     </tbody></table></div>${pgBar('imp',it.length,'drawImp')}</div>`:'<div class="empty" style="padding:20px">Chọn file Excel hoặc dán dữ liệu để xem trước danh sách</div>'}
 function impApply(){
+  if(blockWriteIfLocked())return;
   let add=0,upd=0;
   IMP.items.forEach(o=>{if(o.st==='dup')return;
     if(o.old){if(IMP.mode!=='update')return;
@@ -2799,6 +2955,7 @@ function editDoc(doc){
   toast(`Đang chỉnh sửa phiếu ${doc}. Chỉnh sửa xong bấm "Cập nhật phiếu" nhé.`);
 }
 function deleteDoc(doc){
+  if(blockWriteIfLocked())return;
   const ls=S.txns.filter(t=>t.doc===doc);
   if(!ls.length)return toast('Không tìm thấy phiếu '+doc,'err');
   const t0=ls[0];
@@ -2935,6 +3092,7 @@ function viewDocDetail(doc){
   `,'wide');
 }
 function saveTxn(type,andPrint){
+  if(blockWriteIfLocked())return;
   const c=TX[type],d=draft(type);
   d.date=$('#'+type+'Date').value;d.partner=$('#'+type+'Pt').value.trim();d.note=$('#'+type+'N').value.trim();
   const ls=d.lines.filter(l=>l.pid&&prod(l.pid));
@@ -3075,7 +3233,7 @@ function printDoc(doc){
   document.body.classList.add('pdoc');
   setTimeout(()=>window.print(),80)}
 window.addEventListener('afterprint',()=>document.body.classList.remove('pdoc'));
-function saveCompany(){S.company={name:$('#coName').value.trim(),phone:$('#coPhone').value.trim(),addr:$('#coAddr').value.trim(),kho:$('#coKho').value.trim()};save();toast('Đã lưu thông tin in trên phiếu')}
+function saveCompany(){if(blockWriteIfLocked())return;S.company={name:$('#coName').value.trim(),phone:$('#coPhone').value.trim(),addr:$('#coAddr').value.trim(),kho:$('#coKho').value.trim()};save();toast('Đã lưu thông tin in trên phiếu')}
 
 /* =========================================================
    LỊCH SỬ GIAO DỊCH
@@ -3112,7 +3270,7 @@ function renderHistory(){
     <th>Ngày</th><th>Số phiếu</th><th>Loại</th><th>Sản phẩm</th><th class="n">Số lượng</th><th class="n">Đơn giá</th><th class="n">Thành tiền</th><th>Đối tác</th><th>Ghi chú</th><th class="c" style="width:160px">Thao tác</th>
   </tr></thead><tbody>${html}</tbody>
   <tfoot><tr><td colspan="4">Tổng ${fmt(rows.length)} dòng giao dịch</td><td colspan="3" class="n"><span style="color:var(--in)">Nhập ${money(ti)}</span> · <span style="color:var(--out)">Xuất ${money(to)}</span></td><td colspan="3"></td></tr></tfoot></table></div>${pgBar('hist',rows.length,'renderHistory')}`:'<div class="empty">Không có giao dịch phù hợp</div>'}
-function delTxn(id){const t=S.txns.find(x=>x.id===id);if(!t)return;
+function delTxn(id){if(blockWriteIfLocked())return;const t=S.txns.find(x=>x.id===id);if(!t)return;
   if(t.type==='in'){const s=stock(t.pid);if(s-t.qty<0&&!confirm('Xóa phiếu nhập này sẽ làm tồn kho bị âm. Vẫn xóa?'))return}
   if(!confirm(`Xóa phiếu ${t.doc}?`))return;S.txns=S.txns.filter(x=>x.id!==id);save();toast('Đã xóa phiếu '+t.doc);renderHistory()}
 
@@ -3213,10 +3371,10 @@ function renderSettings(){
   </div>`;
 }
 function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download=`Sao_luu_kho_${TODAYS}.json`;a.click();toast('Đã tải file sao lưu')}
-$('#restoreFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!valid(d))throw 0;
-  if(!confirm(`Khôi phục ${d.products.length} sản phẩm và ${d.txns.length} phiếu? Dữ liệu hiện tại sẽ được thay thế.`))return;S=d;save();toast('Khôi phục xong, thầy bấm Lưu để ghi vào file');rerender()}catch(_){toast('File sao lưu không hợp lệ','err')}};fr.readAsText(f);e.target.value=''};
-function resetSample(){if(!confirm('Thay toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu?'))return;S=seed();save({force:true});toast('Đã nạp dữ liệu mẫu');rerender()}
-function clearAll(){if(!confirm('Xóa SẠCH toàn bộ sản phẩm và phiếu nhập xuất? Nên sao lưu trước khi xóa.'))return;S={products:[],txns:[],ver:2};save({force:true});toast('Đã xóa toàn bộ dữ liệu');rerender()}
+$('#restoreFile').onchange=e=>{const f=e.target.files[0];if(!f)return;if(blockWriteIfLocked()){e.target.value='';return}const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!valid(d))throw 0;
+  if(blockWriteIfLocked())return;if(!confirm(`Khôi phục ${d.products.length} sản phẩm và ${d.txns.length} phiếu? Dữ liệu hiện tại sẽ được thay thế.`))return;S=d;save();toast('Khôi phục xong, thầy bấm Lưu để ghi vào file');rerender()}catch(_){toast('File sao lưu không hợp lệ','err')}};fr.readAsText(f);e.target.value=''};
+function resetSample(){if(blockWriteIfLocked()||!confirm('Thay toàn bộ dữ liệu hiện tại bằng dữ liệu mẫu?'))return;S=seed();save({force:true});toast('Đã nạp dữ liệu mẫu');rerender()}
+function clearAll(){if(blockWriteIfLocked()||!confirm('Xóa SẠCH toàn bộ sản phẩm và phiếu nhập xuất? Nên sao lưu trước khi xóa.'))return;S={products:[],txns:[],ver:2};save({force:true});toast('Đã xóa toàn bộ dữ liệu');rerender()}
 
 /* =========================================================
    CHUNG
@@ -3227,11 +3385,18 @@ $('#today').textContent=TODAY.toLocaleDateString('vi-VN',{weekday:'long',day:'2-
 refreshChrome();refreshSave();
 go((location.hash||'#dashboard').slice(1));
 // Tự động kéo dữ liệu mới nhất từ GitHub / Máy chủ ngay khi mở trang hoặc nhấn F5
+CloudSync.networkChanged();
 CloudSync.pullLatest({ manual: false });
 // Tự động kiểm tra dữ liệu mới khi người dùng quay lại tab hoặc kết nối lại mạng
 window.addEventListener('focus', () => CloudSync.pullLatest({ manual: false }));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') CloudSync.pullLatest({ manual: false }); });
-window.addEventListener('online', () => CloudSync.pushLatest({ manual: false }));
-setInterval(() => { if (document.visibilityState === 'visible') CloudSync.pullLatest({ manual: false }); }, 25000);
+window.addEventListener('online', () => {
+  CloudSync.networkChanged();
+  if (isUnsynced()) CloudSync.pushLatest({ manual: false, forceGithub: true });
+  else CloudSync.pullLatest({ manual: false });
+});
+window.addEventListener('offline', () => CloudSync.networkChanged());
+setInterval(() => { if (isUnsynced()) CloudSync.pushLatest({ manual: false, forceGithub: true }); }, 15000);
+setInterval(() => { if (document.visibilityState === 'visible' && !isUnsynced()) CloudSync.pullLatest({ manual: false }); }, 25000);
 
 </script></body></html>
